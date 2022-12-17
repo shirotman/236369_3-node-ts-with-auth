@@ -1,5 +1,5 @@
 {
-  "name": "hw3-node-ts-auth",
+  "name": "236369_3-node-ts-with-auth",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -11,7 +11,7 @@
     "test": "node scripts/test.js"
   },
   "keywords": [],
-  "author": "nissano-wsp-2022",
+  "author": "Shir_Rotman-Ido_Kawaz",
   "license": "ISC",
   "devDependencies": {
     "@types/node": "^18.11.9",
@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "bcrypt": "^5.1.0",
+    "dotenv": "^16.0.3",
     "jsonwebtoken": "^8.5.1",
     "mongoose": "^6.8.0",
     "uuid": "^9.0.0"

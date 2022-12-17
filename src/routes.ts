@@ -1,6 +1,7 @@
 import { IncomingMessage, ServerResponse } from "http";
 import { protectedRout } from "./auth.js";
 import { ERROR_401 } from "./const.js";
+const {Product} = require('./models/schema.js');
 
 const exampleData = {
   title: "This is a nice example!",
