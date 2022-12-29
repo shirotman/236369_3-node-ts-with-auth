@@ -1,12 +1,13 @@
 import { createServer, IncomingMessage, ServerResponse } from "http";
 import * as mongoose from "mongoose";
+// const mongoose = require('mongoose');
 import * as dotenv from "dotenv";
 
 // import with .js, and not ts.
 // for more info: https://devblogs.microsoft.com/typescript/announcing-typescript-4-7/#type-in-package-json-and-new-extensions
-import { getExample, mainRoute, createRoute } from "./routes.js";
+import { removeProduct, updateProduct, mainRoute, createRoute, createProduct, getProduct } from "./routes.js";
 import { GET_PRODUCT, CREATE_PRODUCT, UPDATE_PRODUCT, REMOVE_PRODUCT, SIGNUP, LOGIN, UPDATE_PRIVILEGES } from "./const.js";
-import { createAdmin, loginRoute, signupRoute, updatePrivilegesRoute } from "./auth.js";
+import { loginRoute, signupRoute, updatePrivilegesRoute } from "./auth.js";
 
 // For environment-variables
 dotenv.config();
@@ -14,22 +15,14 @@ dotenv.config();
 const port = process.env.PORT || 3000;
 
 // Connect to mongoDB
-const dbURI = `mongodb+srv://Ido_Kawaz:1JgSDtWby4oHVqv2@cluster.p3lsutu.mongodb.net/?retryWrites=true&w=majority`;
+const dbURI = `mongodb+srv://Ido_Kawaz:${process.env.DBPASS}@cluster.p3lsutu.mongodb.net/?retryWrites=true&w=majority`;
 await mongoose.connect(dbURI);
 
 let admin: boolean = false;
 
 const server = createServer((req: IncomingMessage, res: ServerResponse) => {
-  if (!admin){
-    createAdmin();
-    admin = true;
-  }
   const route = createRoute(req.url, req.method);
   switch (route) {
-    //not real GET_PRODUCT implementation, the example they provided. TODO:replace with the required GET_PRODUCT implementation logic.
-    case GET_PRODUCT:
-      getExample(req, res);
-      break;
     case SIGNUP:
       signupRoute(req, res);
       break;
@@ -39,7 +32,22 @@ const server = createServer((req: IncomingMessage, res: ServerResponse) => {
     case UPDATE_PRIVILEGES:
       updatePrivilegesRoute(req,res);
       break;
+    case CREATE_PRODUCT:
+      createProduct(req, res);
+      break;
     default:
+      if (route.startsWith(GET_PRODUCT)) {
+        getProduct(req, res);
+        break;
+      }
+      if (route.startsWith(UPDATE_PRODUCT)) {
+        updateProduct(req, res);
+        break;
+      }
+      if (route.startsWith(REMOVE_PRODUCT)) {
+        removeProduct(req, res);
+        break;
+      }
       mainRoute(req, res);
       break;
   }

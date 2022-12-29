@@ -3,7 +3,10 @@ import jwt from "jsonwebtoken";
 import * as bcrypt from "bcrypt";
 import { v4 as uuidv4 } from "uuid";
 //user is the user schema in our database
-const {User} = require('./models/schema.js');
+// const {User} = require('./models/user.js');
+import User from "./models/user.js";
+import { ADMIN_PERMISSIONS, WAREHOUSE_MANAGER_PERMISSIONS, WAREHOUSE_WORKER_PERMISSIONS } from './const.js';
+
 
 
 import { ERROR_401 } from "./const.js";
@@ -30,22 +33,22 @@ export const protectedRout = (req: IncomingMessage, res: ServerResponse) => {
   // authorization header needs to look like that: Bearer <JWT>.
   // So, we just take to <JWT>.
   // You need to validate the header format
-  if (authHeader.split(" ").length != 2 || authHeader.split(" ")[0] != 'Bearer'){
-    res.statusCode = 401;
-    res.end(
-      JSON.stringify({
-        message: "Invalid authentication header format.",
-      })
-    );
-    return ERROR_401;
-  }
-  let authHeaderSplited = authHeader && authHeader.split(" ");
-  const token = authHeaderSplited && authHeaderSplited[1];
+  let authHeaderSplitted = authHeader && authHeader.split(" ");
+  const token = authHeaderSplitted && authHeaderSplitted[1];
   if (!token) {
     res.statusCode = 401;
     res.end(
       JSON.stringify({
         message: "No token.",
+      })
+    );
+    return ERROR_401;
+  }
+  if (authHeaderSplitted.length != 2 || authHeaderSplitted[0] != 'Bearer'){
+    res.statusCode = 401;
+    res.end(
+      JSON.stringify({
+        message: "Invalid authentication header format.",
       })
     );
     return ERROR_401;
@@ -66,16 +69,6 @@ export const protectedRout = (req: IncomingMessage, res: ServerResponse) => {
   // We are good!
   return user;
 };
-
-export const createAdmin = async () => {
-  const user = new User({
-    ID: uuidv4(),
-    Username: 'admin',
-    Password: 'admin',
-    Permission: 'A'
-  });
-  await user.save();
-}
 
 export const updatePrivilegesRoute = (req: IncomingMessage, res: ServerResponse) => {
   let body = "";
@@ -100,7 +93,7 @@ export const updatePrivilegesRoute = (req: IncomingMessage, res: ServerResponse)
       return;
     }
     // Check if username exists
-    const user = await User.find({Username: credentials.username}); 
+    const user = await User.findOne({username: credentials.username}); 
     if (!user) {
       res.statusCode = 401;
       res.end(
@@ -110,7 +103,7 @@ export const updatePrivilegesRoute = (req: IncomingMessage, res: ServerResponse)
       );
       return;
     }
-    if (!(credentials.permission == 'W' && credentials.permission == 'M')){
+    if (!(credentials.permission == WAREHOUSE_WORKER_PERMISSIONS || credentials.permission == WAREHOUSE_MANAGER_PERMISSIONS)){
       res.statusCode = 401;
       res.end(
         JSON.stringify({
@@ -119,7 +112,7 @@ export const updatePrivilegesRoute = (req: IncomingMessage, res: ServerResponse)
       );
       return;
     }
-    user.Permission = credentials.permission;
+    user.permission = credentials.permission;
     await user.save();
 
     res.statusCode = 200; // Successful update!
@@ -152,7 +145,7 @@ export const loginRoute = (req: IncomingMessage, res: ServerResponse) => {
       return;
     }
     // Check if username and password match
-    const user = await User.find({Username: credentials.username}); 
+    const user = await User.findOne({username: credentials.username}); 
     if (!user) {
       res.statusCode = 401;
       res.end(
@@ -168,7 +161,7 @@ export const loginRoute = (req: IncomingMessage, res: ServerResponse) => {
     // Compare password hash & salt.
     const passwordMatch = await bcrypt.compare(
       credentials.password,
-      user.Password
+      user.password
     );
     if (!passwordMatch) {
       res.statusCode = 401;
@@ -182,7 +175,7 @@ export const loginRoute = (req: IncomingMessage, res: ServerResponse) => {
 
     // Create JWT token.
     // This token contain the userId in the data section.
-    const token = jwt.sign({ id: user.ID }, secretKey, {
+    const token = jwt.sign({ id: user._id }, secretKey, {
       expiresIn: 86400, // expires in 24 hours
     });
 
@@ -225,7 +218,7 @@ export const signupRoute = (req: IncomingMessage, res: ServerResponse) => {
       );
       return;
     }
-    else if((await User.find({Username: username}))){
+    else if((await User.find({username: username})).length){
       res.statusCode = 401;
       res.end(
         JSON.stringify({
@@ -237,9 +230,9 @@ export const signupRoute = (req: IncomingMessage, res: ServerResponse) => {
     //end of validation
 
     const user = new User({
-      ID: uuidv4(),
-      Username: username,
-      Password: password
+      // ID: uuidv4(),
+      username: username,
+      password: password
     });
     await user.save();
 

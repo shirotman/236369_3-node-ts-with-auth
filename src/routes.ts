@@ -1,7 +1,8 @@
 import { IncomingMessage, ServerResponse } from "http";
 import { protectedRout } from "./auth.js";
 import { ERROR_401 } from "./const.js";
-const {Product} = require('./models/schema.js');
+// const {Product} = require('./models/schema.js');
+import Product from "./models/product.js";
 
 const exampleData = {
   title: "This is a nice example!",
@@ -25,6 +26,52 @@ export const mainRoute = (req: IncomingMessage, res: ServerResponse) => {
 };
 
 export const getExample = (req: IncomingMessage, res: ServerResponse) => {
+  const user = protectedRout(req, res);
+  if (user !== ERROR_401) {
+    res.statusCode = 200;
+    res.setHeader("Content-Type", "application/json");
+    res.write(JSON.stringify({ data: { ...exampleData }, user: { ...user } })); // build in js function, to convert json to a string
+    res.end();
+  }
+};
+
+export const getProduct = async (req: IncomingMessage, res: ServerResponse) => {
+  res.statusCode = 200;
+
+  const user = protectedRout(req, res);
+  if (user !== ERROR_401) {
+    res.statusCode = 200;
+    res.setHeader("Content-Type", "application/json");
+    res.write(JSON.stringify({ data: { ...exampleData }, user: { ...user } })); // build in js function, to convert json to a string
+    res.end();
+  }
+};
+
+export const createProduct = (req: IncomingMessage, res: ServerResponse) => {
+  const user = protectedRout(req, res);
+  if (user !== ERROR_401) {
+    res.statusCode = 200;
+    res.setHeader("Content-Type", "application/json");
+    res.write(JSON.stringify({ data: { ...exampleData }, user: { ...user } })); // build in js function, to convert json to a string
+    res.end();
+  }
+};
+  
+export const updateProduct = async (req: IncomingMessage, res: ServerResponse) => {
+  res.statusCode = 200;
+
+  const user = protectedRout(req, res);
+  if (user !== ERROR_401) {
+    res.statusCode = 200;
+    res.setHeader("Content-Type", "application/json");
+    res.write(JSON.stringify({ data: { ...exampleData }, user: { ...user } })); // build in js function, to convert json to a string
+    res.end();
+  }
+};
+  
+export const removeProduct = async (req: IncomingMessage, res: ServerResponse) => {
+  res.statusCode = 200;
+
   const user = protectedRout(req, res);
   if (user !== ERROR_401) {
     res.statusCode = 200;
