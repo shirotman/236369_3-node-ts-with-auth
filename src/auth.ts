@@ -6,10 +6,7 @@ import { v4 as uuidv4 } from "uuid";
 // const {User} = require('./models/user.js');
 import User from "./models/user.js";
 import { ADMIN_PERMISSIONS, WAREHOUSE_MANAGER_PERMISSIONS, WAREHOUSE_WORKER_PERMISSIONS } from './const.js';
-
-
-
-import { ERROR_401 } from "./const.js";
+import { BAD_REQUEST_ERROR_400, UNAUTHORIZED_ERROR_401 } from "./const.js";
 
 // TODO: You need to config SERCRET_KEY in render.com dashboard, under Environment section. (I created a secret file named SECRET_KEY in render.com, not sure if this was the intention).
 const secretKey = process.env.SECRET_KEY || "your_secret_key";
@@ -42,16 +39,16 @@ export const protectedRout = (req: IncomingMessage, res: ServerResponse) => {
         message: "No token.",
       })
     );
-    return ERROR_401;
+    return UNAUTHORIZED_ERROR_401;
   }
-  if (authHeaderSplitted.length != 2 || authHeaderSplitted[0] != 'Bearer'){
-    res.statusCode = 401;
+  if (authHeaderSplitted.length != 2 || authHeaderSplitted[0] != 'Bearer'){ // TODO: check error codes
+    res.statusCode = 400;
     res.end(
       JSON.stringify({
         message: "Invalid authentication header format.",
       })
     );
-    return ERROR_401;
+    return BAD_REQUEST_ERROR_400;
   }
 
   // Verify JWT token
@@ -63,7 +60,7 @@ export const protectedRout = (req: IncomingMessage, res: ServerResponse) => {
         message: "Failed to verify JWT.",
       })
     );
-    return ERROR_401;
+    return UNAUTHORIZED_ERROR_401;
   }
 
   // We are good!
@@ -71,20 +68,17 @@ export const protectedRout = (req: IncomingMessage, res: ServerResponse) => {
 };
 
 export const updatePrivilegesRoute = (req: IncomingMessage, res: ServerResponse) => {
-  let body = "";
-  req.on("data", (chunk) => {
-    body += chunk.toString();
-  });
+  let body = getBody(req);
   req.on("end", async () => {
     //TODO: find how to authenticate that the user who sent the request is indeed the admin with the allowed permissions for the update.
     let reqHeader = req.headers['user-agent'] as string;
 
     // Parse request body as JSON
-    const credentials = JSON.parse(body);
+    const credentials = getJSON(body,res);;
 
     //validate that the body has the "shape" you are expect: { username: <username>, permission: <P>}
     if (!("username" in credentials && "permission" in credentials)){
-      res.statusCode = 401;
+      res.statusCode = 400;
       res.end(
         JSON.stringify({
           message: "Invalid JSON format",
@@ -98,16 +92,16 @@ export const updatePrivilegesRoute = (req: IncomingMessage, res: ServerResponse)
       res.statusCode = 401;
       res.end(
         JSON.stringify({
-          message: "Invalid username or permission.",
+          message: "Inexistent username",
         })
       );
       return;
     }
     if (!(credentials.permission == WAREHOUSE_WORKER_PERMISSIONS || credentials.permission == WAREHOUSE_MANAGER_PERMISSIONS)){
-      res.statusCode = 401;
+      res.statusCode = 403;
       res.end(
         JSON.stringify({
-          message: "Invalid username or permission.",
+          message: "Invalid permission.",
         })
       );
       return;
@@ -126,17 +120,14 @@ export const updatePrivilegesRoute = (req: IncomingMessage, res: ServerResponse)
 
 export const loginRoute = (req: IncomingMessage, res: ServerResponse) => {
   // Read request body.
-  let body = "";
-  req.on("data", (chunk) => {
-    body += chunk.toString();
-  });
+  let body = getBody(req);
   req.on("end", async () => {
     // Parse request body as JSON
-    const credentials = JSON.parse(body);
+    const credentials = getJSON(body,res);
 
     //validate that the body has the "shape" you are expect: { username: <username>, password: <password>}
     if (!("username" in credentials && "password" in credentials)){
-      res.statusCode = 401;
+      res.statusCode = 400;
       res.end(
         JSON.stringify({
           message: "Invalid JSON format",
@@ -150,7 +141,7 @@ export const loginRoute = (req: IncomingMessage, res: ServerResponse) => {
       res.statusCode = 401;
       res.end(
         JSON.stringify({
-          message: "Invalid username or password.",
+          message: "Inexistent username",
         })
       );
       return;
@@ -167,7 +158,7 @@ export const loginRoute = (req: IncomingMessage, res: ServerResponse) => {
       res.statusCode = 401;
       res.end(
         JSON.stringify({
-          message: "Invalid username or password.",
+          message: "Invalid password.",
         })
       );
       return;
@@ -189,19 +180,16 @@ export const loginRoute = (req: IncomingMessage, res: ServerResponse) => {
 };
 
 export const signupRoute = (req: IncomingMessage, res: ServerResponse) => {
-  let body = "";
-  req.on("data", (chunk) => {
-    body += chunk.toString();
-  });
+  let body = getBody(req);
+
   req.on("end", async () => {
     // Parse request body as JSON
-    const credentials = JSON.parse(body);
-    const username = credentials.username;
-    const password = await bcrypt.hash(credentials.password, 10);
-
+    const credentials = getJSON(body,res);
+    if (!credentials)
+      return;
     //validation
     if (!("username" in credentials && "password" in credentials)){
-      res.statusCode = 401;
+      res.statusCode = 400;
       res.end(
         JSON.stringify({
           message: "Invalid JSON format",
@@ -209,6 +197,8 @@ export const signupRoute = (req: IncomingMessage, res: ServerResponse) => {
       );
       return;
     }
+    const username = credentials.username;
+    const password = await bcrypt.hash(credentials.password, 10);
     if (username == '' || credentials.password == ''){
       res.statusCode = 401;
       res.end(
@@ -237,10 +227,31 @@ export const signupRoute = (req: IncomingMessage, res: ServerResponse) => {
     await user.save();
 
     res.statusCode = 201; // Created a new user!
-    res.end(
-      JSON.stringify({
-        username,
-      })
-    );
+    res.end();
   });
 };
+
+
+export const getJSON = (body: string, res: ServerResponse) => {
+  let cred = null;
+  try{
+    cred = JSON.parse(body);
+  }
+  catch{
+    res.statusCode = 400;
+    res.end(
+      JSON.stringify({
+        message: "Invalid JSON format",
+      })
+    );
+  }
+  return cred;
+}
+
+export const getBody = (req: IncomingMessage) => {
+  let body = "";
+  req.on("data", (chunk) => {
+    body += chunk.toString();
+  });
+  return body;
+}

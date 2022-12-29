@@ -19,11 +19,11 @@ enum Category {
 
 const productSchema = new mongoose.Schema(
   {
-    Name: {type: String, required: true},
-    Category: {type: Category, required: true},
-    Description: {type: String, required: true},
-    Price: {type: Number, min: 0, max: 1000, required: true},
-    Stock: {type: Number, required: true},
+    name: {type: String, required: true},
+    category: {type: String, required: true},
+    description: {type: String, required: true},
+    price: {type: Number, min: 0, max: 1000, required: true},
+    stock: {type: Number, required: true},
     image: {type: String}
   });
 
