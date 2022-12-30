@@ -1,11 +1,10 @@
 import { createServer, IncomingMessage, ServerResponse } from "http";
 import * as mongoose from "mongoose";
-// const mongoose = require('mongoose');
 import * as dotenv from "dotenv";
 
 // import with .js, and not ts.
 // for more info: https://devblogs.microsoft.com/typescript/announcing-typescript-4-7/#type-in-package-json-and-new-extensions
-import { removeProduct, updateProduct, mainRoute, createRoute, createProduct, getProduct } from "./routes.js";
+import { removeProduct, updateProduct, NotFoundRoute, createRoute, createProduct, getProduct } from "./routes.js";
 import { GET_PRODUCT, CREATE_PRODUCT, UPDATE_PRODUCT, REMOVE_PRODUCT, SIGNUP, LOGIN, UPDATE_PRIVILEGES } from "./const.js";
 import { loginRoute, signupRoute, updatePrivilegesRoute } from "./auth.js";
 
@@ -36,19 +35,22 @@ const server = createServer((req: IncomingMessage, res: ServerResponse) => {
       createProduct(req, res);
       break;
     default:
+      const parameter_arr= route.split("/");
+      const parameter = parameter_arr[parameter_arr.length-1];
       if (route.startsWith(GET_PRODUCT)) {
-        getProduct(req, res);
+        getProduct(parameter, req, res);
         break;
       }
       if (route.startsWith(UPDATE_PRODUCT)) {
-        updateProduct(req, res);
+
+        updateProduct(parameter, req, res);
         break;
       }
       if (route.startsWith(REMOVE_PRODUCT)) {
-        removeProduct(req, res);
+        removeProduct(parameter, req, res);
         break;
       }
-      mainRoute(req, res);
+      NotFoundRoute(req, res);
       break;
   }
 });

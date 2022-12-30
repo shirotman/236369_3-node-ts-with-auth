@@ -1,8 +1,4 @@
-import { url } from "inspector";
-// const mongoose = require('mongoose');
 import * as mongoose from "mongoose";
-
-import { idText } from "typescript";
 import { WAREHOUSE_WORKER_PERMISSIONS } from '../const.js';
 
 const userSchema = new mongoose.Schema(

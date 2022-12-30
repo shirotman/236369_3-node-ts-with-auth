@@ -1,7 +1,7 @@
 import { IncomingMessage, ServerResponse } from "http";
 import jwt from "jsonwebtoken";
 import * as bcrypt from "bcrypt";
-import { v4 as uuidv4 } from "uuid";
+import { ObjectId } from "mongoose";
 //user is the user schema in our database
 // const {User} = require('./models/user.js');
 import User from "./models/user.js";
@@ -62,17 +62,34 @@ export const protectedRout = (req: IncomingMessage, res: ServerResponse) => {
     );
     return UNAUTHORIZED_ERROR_401;
   }
-
   // We are good!
-  return user;
+  return user.id;
 };
 
 export const updatePrivilegesRoute = (req: IncomingMessage, res: ServerResponse) => {
-  let body = getBody(req);
+  let body = "";
+  req.on("data", (chunk) => {
+    body += chunk.toString();
+  });
   req.on("end", async () => {
     //TODO: find how to authenticate that the user who sent the request is indeed the admin with the allowed permissions for the update.
-    let reqHeader = req.headers['user-agent'] as string;
-
+    const admin_id = protectedRout(req, res);
+    if (admin_id === UNAUTHORIZED_ERROR_401 || admin_id === BAD_REQUEST_ERROR_400)  {
+      return;
+    }
+    const admin = await getUser(admin_id,res);
+    if (admin === UNAUTHORIZED_ERROR_401){
+      return;
+    }
+    if (admin.permission !== ADMIN_PERMISSIONS) {
+      res.statusCode = 403;
+      res.end(
+        JSON.stringify({
+          message: "Forbidden permission",
+        })
+      );
+      return;
+    }
     // Parse request body as JSON
     const credentials = getJSON(body,res);;
 
@@ -98,10 +115,10 @@ export const updatePrivilegesRoute = (req: IncomingMessage, res: ServerResponse)
       return;
     }
     if (!(credentials.permission == WAREHOUSE_WORKER_PERMISSIONS || credentials.permission == WAREHOUSE_MANAGER_PERMISSIONS)){
-      res.statusCode = 403;
+      res.statusCode = 400;
       res.end(
         JSON.stringify({
-          message: "Invalid permission.",
+          message: "Invalid permission input.",
         })
       );
       return;
@@ -110,17 +127,16 @@ export const updatePrivilegesRoute = (req: IncomingMessage, res: ServerResponse)
     await user.save();
 
     res.statusCode = 200; // Successful update!
-    res.end(
-      JSON.stringify({
-        token: credentials.username,
-      })
-    );
+    res.end();
   });
 };
 
 export const loginRoute = (req: IncomingMessage, res: ServerResponse) => {
   // Read request body.
-  let body = getBody(req);
+  let body = "";
+  req.on("data", (chunk) => {
+    body += chunk.toString();
+  });
   req.on("end", async () => {
     // Parse request body as JSON
     const credentials = getJSON(body,res);
@@ -180,8 +196,10 @@ export const loginRoute = (req: IncomingMessage, res: ServerResponse) => {
 };
 
 export const signupRoute = (req: IncomingMessage, res: ServerResponse) => {
-  let body = getBody(req);
-
+  let body = "";
+  req.on("data", (chunk) => {
+    body += chunk.toString();
+  });
   req.on("end", async () => {
     // Parse request body as JSON
     const credentials = getJSON(body,res);
@@ -220,7 +238,6 @@ export const signupRoute = (req: IncomingMessage, res: ServerResponse) => {
     //end of validation
 
     const user = new User({
-      // ID: uuidv4(),
       username: username,
       password: password
     });
@@ -232,7 +249,7 @@ export const signupRoute = (req: IncomingMessage, res: ServerResponse) => {
 };
 
 
-export const getJSON = (body: string, res: ServerResponse) => {
+export const getJSON = (body: string, res: ServerResponse) => { //TODO: check why body is null
   let cred = null;
   try{
     cred = JSON.parse(body);
@@ -248,10 +265,17 @@ export const getJSON = (body: string, res: ServerResponse) => {
   return cred;
 }
 
-export const getBody = (req: IncomingMessage) => {
-  let body = "";
-  req.on("data", (chunk) => {
-    body += chunk.toString();
-  });
-  return body;
+export const getUser = async (id: ObjectId, res: ServerResponse) => {
+  const user = await User.findOne({_id: id}); 
+  //in case a user gets removed from the database in a mysterious way
+  if (!user){ 
+    res.statusCode = 401;
+    res.write(JSON.stringify({
+      message: 'inexistent username'
+    }));
+    res.end()
+    return UNAUTHORIZED_ERROR_401;
+  }
+  else
+    return user;
 }

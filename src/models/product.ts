@@ -1,9 +1,6 @@
-import { url } from "inspector";
-// const mongoose = require('mongoose');
 import * as mongoose from "mongoose";
-import { idText } from "typescript";
 
-enum Category {
+export enum Category {
   Tshirt = 't-shirt',
   Hoodie = 'hoodie',
   Hat = 'hat',
@@ -23,7 +20,7 @@ const productSchema = new mongoose.Schema(
     category: {type: String, required: true},
     description: {type: String, required: true},
     price: {type: Number, min: 0, max: 1000, required: true},
-    stock: {type: Number, required: true},
+    stock: {type: Number, min: 0, required: true},
     image: {type: String}
   });
 
