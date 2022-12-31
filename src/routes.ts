@@ -9,12 +9,13 @@ export const createRoute = (url: string, method: string) => {
 };
 
 export const NotFoundRoute = (req: IncomingMessage, res: ServerResponse) => {
-  res.statusCode = 404;
+  if (req)   {
+    res.statusCode = 404;
     res.write(JSON.stringify({
       message: 'Path not found'
     }));
     res.end()
-    return;
+    return;}
 };
 
 export const getProduct = async (id_or_type: string, req: IncomingMessage, res: ServerResponse) => {
@@ -100,7 +101,6 @@ export const createProduct = async (req: IncomingMessage, res: ServerResponse) =
     let valid : Boolean = validateProduct(product, res);
     if (!valid)
       return;
-    //TODO: validate product fields values
     //end of validation
     try{
       const new_product =  new Product({

@@ -12,7 +12,6 @@ import { UNAUTHORIZED_ERROR_401 } from "./const.js";
 dotenv.config();
 
 
-// TODO: You need to config SERCRET_KEY in render.com dashboard, under Environment section. (I created a secret file named SECRET_KEY in render.com, not sure if this was the intention).
 const secretKey = process.env.SECRET_KEY || 'your_secret_key';
 
 
@@ -45,7 +44,7 @@ export const protectedRout = (req: IncomingMessage, res: ServerResponse) => {
     );
     return UNAUTHORIZED_ERROR_401;
   }
-  if (authHeaderSplitted.length != 2 || authHeaderSplitted[0] != 'Bearer'){ // TODO: check error codes
+  if (authHeaderSplitted.length != 2 || authHeaderSplitted[0] != 'Bearer'){
     res.statusCode = 401;
     res.end(
       JSON.stringify({
@@ -77,7 +76,6 @@ export const updatePrivilegesRoute = (req: IncomingMessage, res: ServerResponse)
     body += chunk.toString();
   });
   req.on("end", async () => {
-    //TODO: find how to authenticate that the user who sent the request is indeed the admin with the allowed permissions for the update.
     const admin_id = protectedRout(req, res);
     if (admin_id === UNAUTHORIZED_ERROR_401)  {
       return;
@@ -265,7 +263,7 @@ export const signupRoute = (req: IncomingMessage, res: ServerResponse) => {
 };
 
 
-export const getJSON = (body: string, res: ServerResponse) => { //TODO: check why body is null
+export const getJSON = (body: string, res: ServerResponse) => { 
   let cred = null;
   try{
     cred = JSON.parse(body);

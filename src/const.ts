@@ -9,8 +9,8 @@ export const ADMIN_PERMISSIONS = "A"
 export const WAREHOUSE_MANAGER_PERMISSIONS = "M"
 export const WAREHOUSE_WORKER_PERMISSIONS = "W"
 
-export const GET_PRODUCT = "GET /api/product"; //TODO: add {id} with varying value
-export const CREATE_PRODUCT = "POST /api/product"; //TODO: add {type} with varying value
+export const GET_PRODUCT = "GET /api/product"; 
+export const CREATE_PRODUCT = "POST /api/product";
 export const UPDATE_PRODUCT = "PUT /api/product";
 export const REMOVE_PRODUCT = 'DELETE /api/product';
 export const SIGNUP = "POST /api/signup";
