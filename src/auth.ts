@@ -3,17 +3,13 @@ import * as dotenv from "dotenv";
 import jwt from "jsonwebtoken";
 import * as bcrypt from "bcrypt";
 import { ObjectId } from "mongoose";
-//user is the user schema in our database
-// const {User} = require('./models/user.js');
 import User from "./models/user.js";
 import { ADMIN_PERMISSIONS, WAREHOUSE_MANAGER_PERMISSIONS, WAREHOUSE_WORKER_PERMISSIONS } from './const.js';
 import { UNAUTHORIZED_ERROR_401 } from "./const.js";
 
 dotenv.config();
 
-
 const secretKey = process.env.SECRET_KEY || 'your_secret_key';
-
 
 // Verify JWT token
 const verifyJWT = (token: string) => {
@@ -44,7 +40,8 @@ export const protectedRout = (req: IncomingMessage, res: ServerResponse) => {
     );
     return UNAUTHORIZED_ERROR_401;
   }
-  if (authHeaderSplitted.length != 2 || authHeaderSplitted[0] != 'Bearer'){
+  // validate header format, invalid one is unauthorized
+  if (authHeaderSplitted.length != 2 || authHeaderSplitted[0] != 'Bearer') {
     res.statusCode = 401;
     res.end(
       JSON.stringify({
@@ -52,7 +49,6 @@ export const protectedRout = (req: IncomingMessage, res: ServerResponse) => {
       })
     );
     return UNAUTHORIZED_ERROR_401;
-    ;
   }
 
   // Verify JWT token
@@ -76,19 +72,19 @@ export const updatePrivilegesRoute = (req: IncomingMessage, res: ServerResponse)
     body += chunk.toString();
   });
   req.on("end", async () => {
-    const admin_id = protectedRout(req, res);
-    if (admin_id === UNAUTHORIZED_ERROR_401)  {
+    const adminId = protectedRout(req, res);
+    if (adminId === UNAUTHORIZED_ERROR_401) {
       return;
     }
-    const admin = await getUser(admin_id,res);
-    if (admin === UNAUTHORIZED_ERROR_401){
+    const admin = await getUser(adminId,res);
+    if (admin === UNAUTHORIZED_ERROR_401) {
       return;
     }
     if (admin.permission !== ADMIN_PERMISSIONS) {
       res.statusCode = 403;
       res.end(
         JSON.stringify({
-          message: "Forbidden permission",
+          message: "Forbidden permission.",
         })
       );
       return;
@@ -97,12 +93,12 @@ export const updatePrivilegesRoute = (req: IncomingMessage, res: ServerResponse)
     const credentials = getJSON(body,res);;
     if (!credentials)
       return;
-    //validate that the body has the "shape" you are expect: { username: <username>, permission: <P>}
-    if (!("username" in credentials && "permission" in credentials)){
+    // Validate that the body has the "shape" {username: <username>, permission: <P>}
+    if (!("username" in credentials && "permission" in credentials)) {
       res.statusCode = 400;
       res.end(
         JSON.stringify({
-          message: "Invalid JSON format",
+          message: "Invalid JSON format.",
         })
       );
       return;
@@ -113,12 +109,12 @@ export const updatePrivilegesRoute = (req: IncomingMessage, res: ServerResponse)
       res.statusCode = 401;
       res.end(
         JSON.stringify({
-          message: "Inexistent username",
+          message: "Username doesn't exist.",
         })
       );
       return;
     }
-    if (!(credentials.permission == WAREHOUSE_WORKER_PERMISSIONS || credentials.permission == WAREHOUSE_MANAGER_PERMISSIONS)){
+    if (!(credentials.permission == WAREHOUSE_WORKER_PERMISSIONS || credentials.permission == WAREHOUSE_MANAGER_PERMISSIONS)) {
       res.statusCode = 400;
       res.end(
         JSON.stringify({
@@ -146,17 +142,17 @@ export const loginRoute = (req: IncomingMessage, res: ServerResponse) => {
     const credentials = getJSON(body,res);
     if (!credentials)
       return;
-    //validate that the body has the "shape" you are expect: { username: <username>, password: <password>}
-    if (!("username" in credentials && "password" in credentials)){
+    // Validate that the body has the "shape" {username: <username>, password: <password>}
+    if (!("username" in credentials && "password" in credentials)) {
       res.statusCode = 400;
       res.end(
         JSON.stringify({
-          message: "Invalid JSON format",
+          message: "Invalid JSON format.",
         })
       );
       return;
     }
-    if (credentials.username == '' || credentials.password == ''){
+    if (credentials.username == '' || credentials.password == '') {
       res.statusCode = 400;
       res.end(
         JSON.stringify({
@@ -171,7 +167,7 @@ export const loginRoute = (req: IncomingMessage, res: ServerResponse) => {
       res.statusCode = 401;
       res.end(
         JSON.stringify({
-          message: "Inexistent username",
+          message: "Username doesn't exist.",
         })
       );
       return;
@@ -220,18 +216,18 @@ export const signupRoute = (req: IncomingMessage, res: ServerResponse) => {
     if (!credentials)
       return;
     //validation
-    if (!("username" in credentials && "password" in credentials)){
+    if (!("username" in credentials && "password" in credentials)) {
       res.statusCode = 400;
       res.end(
         JSON.stringify({
-          message: "Invalid JSON format",
+          message: "Invalid JSON format.",
         })
       );
       return;
     }
     const username = credentials.username;
     const password = await bcrypt.hash(credentials.password, 10);
-    if (username == '' || credentials.password == ''){
+    if (username == '' || credentials.password == '') {
       res.statusCode = 400;
       res.end(
         JSON.stringify({
@@ -240,7 +236,7 @@ export const signupRoute = (req: IncomingMessage, res: ServerResponse) => {
       );
       return;
     }
-    else if((await User.find({username: username})).length){
+    else if ((await User.find({username: username})).length) {
       res.statusCode = 401;
       res.end(
         JSON.stringify({
@@ -263,6 +259,8 @@ export const signupRoute = (req: IncomingMessage, res: ServerResponse) => {
 };
 
 
+// Auxilary functions:
+
 export const getJSON = (body: string, res: ServerResponse) => { 
   let cred = null;
   try{
@@ -272,7 +270,7 @@ export const getJSON = (body: string, res: ServerResponse) => {
     res.statusCode = 400;
     res.end(
       JSON.stringify({
-        message: "Invalid JSON format",
+        message: "Invalid JSON format.",
       })
     );
   }
@@ -281,11 +279,11 @@ export const getJSON = (body: string, res: ServerResponse) => {
 
 export const getUser = async (id: ObjectId, res: ServerResponse) => {
   const user = await User.findOne({_id: id}); 
-  //in case a user gets removed from the database in a mysterious way
-  if (!user){ 
+  // in case a user gets removed from the database in a mysterious way
+  if (!user) { 
     res.statusCode = 401;
     res.write(JSON.stringify({
-      message: 'inexistent username'
+      message: "Username doesn't exist."
     }));
     res.end()
     return UNAUTHORIZED_ERROR_401;
