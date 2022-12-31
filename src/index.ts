@@ -37,6 +37,10 @@ const server = createServer((req: IncomingMessage, res: ServerResponse) => {
     default:
       const parameter_arr= route.split("/");
       const parameter = parameter_arr[parameter_arr.length-1];
+      if (parameter == "product"){
+        NotFoundRoute(req,res);
+        break;
+      }
       if (route.startsWith(GET_PRODUCT)) {
         getProduct(parameter, req, res);
         break;

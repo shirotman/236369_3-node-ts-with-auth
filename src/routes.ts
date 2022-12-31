@@ -19,7 +19,7 @@ export const NotFoundRoute = (req: IncomingMessage, res: ServerResponse) => {
 
 export const getProduct = async (id_or_type: string, req: IncomingMessage, res: ServerResponse) => {
   const user_id = protectedRout(req, res);
-  if (user_id === UNAUTHORIZED_ERROR_401 || user_id === BAD_REQUEST_ERROR_400)  {
+  if (user_id === UNAUTHORIZED_ERROR_401)  {
     return;
   }
   const user = await getUser(user_id,res);
@@ -53,6 +53,15 @@ export const getProduct = async (id_or_type: string, req: IncomingMessage, res: 
     const product = await getProductObject(id_or_type,res);
     if (product  === NOT_FOUND_ERROR_404)
       return;
+    else if (product === BAD_REQUEST_ERROR_400){
+      res.statusCode = 404
+      res.end(
+        JSON.stringify({
+          message: "invalid id",
+        })
+      );
+      return;
+    }
     product.set('__v', undefined, {strict: false} );
     res.statusCode = 200; // returned product
     res.end(JSON.stringify(
@@ -62,7 +71,7 @@ export const getProduct = async (id_or_type: string, req: IncomingMessage, res: 
 
 export const createProduct = async (req: IncomingMessage, res: ServerResponse) => {
   const user_id = protectedRout(req, res);
-  if (user_id === UNAUTHORIZED_ERROR_401 || user_id === BAD_REQUEST_ERROR_400)  {
+  if (user_id === UNAUTHORIZED_ERROR_401)  {
     return;
   }
   const user = await getUser(user_id,res);
@@ -88,7 +97,6 @@ export const createProduct = async (req: IncomingMessage, res: ServerResponse) =
     if (!product)
       return;
     //validation
-    console.log(product);
     let valid : Boolean = validateProduct(product, res);
     if (!valid)
       return;
@@ -124,14 +132,14 @@ export const createProduct = async (req: IncomingMessage, res: ServerResponse) =
   
 export const updateProduct = async (id: string ,req: IncomingMessage, res: ServerResponse) => {
   const user_id = protectedRout(req, res);
-  if (user_id === UNAUTHORIZED_ERROR_401 || user_id === BAD_REQUEST_ERROR_400)  {
+  if (user_id === UNAUTHORIZED_ERROR_401)  {
     return;
   }
   const user = await getUser(user_id,res);
   if (user === UNAUTHORIZED_ERROR_401){
     return;
   }
-  if (user.permission === WAREHOUSE_WORKER_PERMISSIONS) {
+  else if (user.permission === WAREHOUSE_WORKER_PERMISSIONS){
     res.statusCode = 403;
     res.end(
       JSON.stringify({
@@ -146,8 +154,17 @@ export const updateProduct = async (id: string ,req: IncomingMessage, res: Serve
   });
   req.on("end", async () => {
     const product = await getProductObject(id,res);
-    if (product ===  NOT_FOUND_ERROR_404)
+    if (product  === NOT_FOUND_ERROR_404)
       return;
+    else if (product === BAD_REQUEST_ERROR_400){
+      res.statusCode = 400
+      res.end(
+        JSON.stringify({
+          message: "Invalid id",
+        })
+      );
+      return;
+    }
     // Parse request body as JSON
     const fields_to_update = getJSON(body,res);
     if (!fields_to_update)
@@ -191,7 +208,7 @@ export const updateProduct = async (id: string ,req: IncomingMessage, res: Serve
   
 export const removeProduct = async (id: string, req: IncomingMessage, res: ServerResponse) => {
   const user_id = protectedRout(req, res);
-  if (user_id === UNAUTHORIZED_ERROR_401 || user_id === BAD_REQUEST_ERROR_400)  {
+  if (user_id === UNAUTHORIZED_ERROR_401)  {
     return;
   }
   const user = await getUser(user_id,res);
@@ -224,8 +241,13 @@ export const removeProduct = async (id: string, req: IncomingMessage, res: Serve
     }
     //end of validation
     const product = await getProductObject(id,res);
-    if (product === NOT_FOUND_ERROR_404)
+    if (product  === NOT_FOUND_ERROR_404)
       return;
+    else if (product === BAD_REQUEST_ERROR_400){
+      res.statusCode = 200;
+      res.end();
+      return;
+    }
     await product.remove(); 
     res.statusCode = 200; // deleted product
     res.end();
@@ -267,8 +289,9 @@ const getProductObject = async (id, res: ServerResponse) => {
   let product = null;
   if (isvalidId)
     product = await Product.findOne({_id: id}); 
-  else (isvalidId)
-  if (!(isvalidId && product)){ 
+  else 
+    {return BAD_REQUEST_ERROR_400;}
+  if (!product){ 
     res.statusCode = 404;
     res.write(JSON.stringify({
       message: 'Inexistent product'

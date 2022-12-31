@@ -1,4 +1,5 @@
 import { IncomingMessage, ServerResponse } from "http";
+import * as dotenv from "dotenv";
 import jwt from "jsonwebtoken";
 import * as bcrypt from "bcrypt";
 import { ObjectId } from "mongoose";
@@ -6,10 +7,13 @@ import { ObjectId } from "mongoose";
 // const {User} = require('./models/user.js');
 import User from "./models/user.js";
 import { ADMIN_PERMISSIONS, WAREHOUSE_MANAGER_PERMISSIONS, WAREHOUSE_WORKER_PERMISSIONS } from './const.js';
-import { BAD_REQUEST_ERROR_400, UNAUTHORIZED_ERROR_401 } from "./const.js";
+import { UNAUTHORIZED_ERROR_401 } from "./const.js";
+
+dotenv.config();
+
 
 // TODO: You need to config SERCRET_KEY in render.com dashboard, under Environment section. (I created a secret file named SECRET_KEY in render.com, not sure if this was the intention).
-const secretKey = process.env.SECRET_KEY || "your_secret_key";
+const secretKey = process.env.SECRET_KEY || 'your_secret_key';
 
 
 // Verify JWT token
@@ -42,13 +46,14 @@ export const protectedRout = (req: IncomingMessage, res: ServerResponse) => {
     return UNAUTHORIZED_ERROR_401;
   }
   if (authHeaderSplitted.length != 2 || authHeaderSplitted[0] != 'Bearer'){ // TODO: check error codes
-    res.statusCode = 400;
+    res.statusCode = 401;
     res.end(
       JSON.stringify({
         message: "Invalid authentication header format.",
       })
     );
-    return BAD_REQUEST_ERROR_400;
+    return UNAUTHORIZED_ERROR_401;
+    ;
   }
 
   // Verify JWT token
@@ -74,7 +79,7 @@ export const updatePrivilegesRoute = (req: IncomingMessage, res: ServerResponse)
   req.on("end", async () => {
     //TODO: find how to authenticate that the user who sent the request is indeed the admin with the allowed permissions for the update.
     const admin_id = protectedRout(req, res);
-    if (admin_id === UNAUTHORIZED_ERROR_401 || admin_id === BAD_REQUEST_ERROR_400)  {
+    if (admin_id === UNAUTHORIZED_ERROR_401)  {
       return;
     }
     const admin = await getUser(admin_id,res);
