@@ -19,10 +19,18 @@ const productSchema = new mongoose.Schema(
     name: {type: String, required: true},
     category: {type: String, required: true},
     description: {type: String, required: true},
-    price: {type: Number, min: 0, max: 1000, required: true},
+    price: {type: Number,  min: 0, max: 1000, required: true},
     stock: {type: Number, min: 0, required: true},
     image: {type: String}
   });
+
+productSchema.set('toJSON', {
+  virtuals: true,
+  versionKey: false,
+  transform: function (doc, ret) {
+    delete ret._id;
+  }
+});
 
 export default mongoose.model('Product', productSchema);
 

@@ -92,7 +92,8 @@ export const updatePrivilegesRoute = (req: IncomingMessage, res: ServerResponse)
     }
     // Parse request body as JSON
     const credentials = getJSON(body,res);;
-
+    if (!credentials)
+      return;
     //validate that the body has the "shape" you are expect: { username: <username>, permission: <P>}
     if (!("username" in credentials && "permission" in credentials)){
       res.statusCode = 400;
@@ -140,13 +141,23 @@ export const loginRoute = (req: IncomingMessage, res: ServerResponse) => {
   req.on("end", async () => {
     // Parse request body as JSON
     const credentials = getJSON(body,res);
-
+    if (!credentials)
+      return;
     //validate that the body has the "shape" you are expect: { username: <username>, password: <password>}
     if (!("username" in credentials && "password" in credentials)){
       res.statusCode = 400;
       res.end(
         JSON.stringify({
           message: "Invalid JSON format",
+        })
+      );
+      return;
+    }
+    if (credentials.username == '' || credentials.password == ''){
+      res.statusCode = 400;
+      res.end(
+        JSON.stringify({
+          message: "Invalid username or password.",
         })
       );
       return;
@@ -218,7 +229,7 @@ export const signupRoute = (req: IncomingMessage, res: ServerResponse) => {
     const username = credentials.username;
     const password = await bcrypt.hash(credentials.password, 10);
     if (username == '' || credentials.password == ''){
-      res.statusCode = 401;
+      res.statusCode = 400;
       res.end(
         JSON.stringify({
           message: "Invalid username or password.",

@@ -85,7 +85,10 @@ export const createProduct = async (req: IncomingMessage, res: ServerResponse) =
   req.on("end", async () => {
     // Parse request body as JSON
     const product = getJSON(body,res);
+    if (!product)
+      return;
     //validation
+    console.log(product);
     let valid : Boolean = validateProduct(product, res);
     if (!valid)
       return;
@@ -147,9 +150,19 @@ export const updateProduct = async (id: string ,req: IncomingMessage, res: Serve
       return;
     // Parse request body as JSON
     const fields_to_update = getJSON(body,res);
+    if (!fields_to_update)
+      return;
     const joint_fields = Object.keys(Product.schema.paths).filter(value => Object.keys(fields_to_update).includes(value));
     //validation
-    if (!joint_fields.length){
+    let illegalInt: boolean = false;
+    ["price", "stock"].forEach(att => {
+      if (Object.keys(fields_to_update).includes(att) && (typeof fields_to_update[att] === 'string' || !Number.isInteger(fields_to_update[att]))) {
+        illegalInt = illegalInt || true;
+    }});
+    if (Object.keys(fields_to_update).includes('category') && !(fields_to_update['category'] && Object.values(Category).includes(fields_to_update['category']))) {
+      illegalInt = illegalInt || true;
+    }
+    if (!joint_fields.length || illegalInt){
       res.statusCode = 400;
       res.end(JSON.stringify({
         message: "invalid input"
@@ -221,8 +234,6 @@ export const removeProduct = async (id: string, req: IncomingMessage, res: Serve
 
 const validateProduct = (product, res: ServerResponse) =>{
   let valid: Boolean = true;
-  console.log(Object.values(Category));
-  console.log(Object.keys(Category));
   if (!("name" in product && "category" in product && "description" in product && "price" in product && "stock" in product)){
     valid = false;
   }
@@ -236,7 +247,8 @@ const validateProduct = (product, res: ServerResponse) =>{
   else if ("image" in product && !(typeof product.image === 'string' || product.image instanceof String)){
     valid = false;
   }
-  else if (!(Number.isInteger(product.price) && Number.isInteger(product.stock))){
+  else if (!(Number.isInteger(product.price) && typeof product.price !== 'string' &&
+             Number.isInteger(product.stock) && typeof product.stock !== 'string')){
     valid = false;
   }
   if (!valid) {
@@ -255,6 +267,7 @@ const getProductObject = async (id, res: ServerResponse) => {
   let product = null;
   if (isvalidId)
     product = await Product.findOne({_id: id}); 
+  else (isvalidId)
   if (!(isvalidId && product)){ 
     res.statusCode = 404;
     res.write(JSON.stringify({
